@@ -1,0 +1,5 @@
+Copy cc_notebook.js into your ipython profile custom javascript directory. (the default profile is usually located at ~/.ipython/profile_default/static/custom) 
+Then add the following line to the last line of custom.js:
+
+require(['custom/cc_notebook'])
+
