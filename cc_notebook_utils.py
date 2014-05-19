@@ -13,76 +13,18 @@ import pandas
 JMOL_PATH = '/home/clyde/Dropbox/Project Stuff/Notebooks/jmol'
 NOTEBOOK_PATH = '/home/clyde/Dropbox/Project Stuff/Notebooks/'
 
-#this function opens the linked file in gaussSum/gaussview/avogadro/vi depending on the command key held down
-##depreciated since IPython 2.0 - javascript utility functions are now defined in custom.js
-#jscript = """
-           # <script type="text/javascript">
-           # function view_function (event, file_n) {
-           #     if (event.ctrlKey && event.shiftKey){
-           #         IPython.notebook.kernel.execute("cc_notebook_utils.pygview('" + file_n + ".log')");
-           #     }
-           #     else if (event.ctrlKey){
-           #         IPython.notebook.kernel.execute("cc_notebook_utils.pygausssum('" + file_n + ".log')");
-           #     }
-           #     else if (event.shiftKey){
-           #         IPython.notebook.kernel.execute("cc_notebook_utils.pyvogadro('" + file_n + ".log')");
-           #     }
-           #     else {
-           #         IPython.notebook.kernel.execute("cc_notebook_utils.pyvim('" + file_n + ".log')");
-           #         IPython.notebook.kernel.execute("print(file_n)");
-           #     }
-           # }
-           # </script>"""
-
-#from gaussian_job_manager import extract_status
-#def mols_to_html(list_mols, colour=None):
-#    import os
-#
-#    if any([not mol.calc or mol.calc.get_name() != 'Gaussian' for mol in list_mols]):
-#        raise RuntimeError('currently only implemented for Gaussian')
-#
-#    if not colour:
-#        colour = 'white'
-#
-#    #defines 'view_function'
-#    html_script = jscript
-#
-#    names = [mol.calc.label for mol in list_mols]
-#    log_links = ['<input type="button" value="Smart Log" id="{n}" onclick="view_function(event, this.id)" />'.format(n=mol.calc.label) for mol in list_mols]
-#    com_links = ['<a href = "files/{p}/{n}.com" target = "_blank">com</a>'.format(p=os.path.relpath(os.getcwd(),'/home/clyde/Dropbox/Project Stuff/Notebooks/'), n=mol.calc.label) for mol in list_mols]
-#    status = [extract_status(name+'.log') for name in names]
-#
-#
-#    init =  """
-#    <style>
-#    table
-#    {{
-#        border-collapse:collapse;
-#    }}
-#    td
-#    {{
-#        padding:15px;
-#    }}
-#    </style>
-#    <body>
-#    <table bgcolor="{c}">
-#    <col/>""".format(c=colour)
-#
-#    table_eles = "".join(['<tr><td>{n}</td><td>{c}</td><td>{l}</td><td>{s}</td></tr>'.format(n=names[i], c=com_links[i], l=log_links[i], s=status[i]) for i in range(len(names))])
-#
-#    final = """
-#    </table>
-#    </body>"""
-#
-#    return display.HTML(html_script + init + table_eles + final)
-
+#python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
 def pyvim(fn):
+    """Opens gvim"""
     os.system('gvim {f} &'.format(f=fn))
 def pyvogadro(fn):
+    """Opens avogadro"""
     os.system('avogadro {f} &'.format(f=fn))
 def pygausssum(fn):
+    """Opens Gaussum"""
     os.system('GaussSum.py {f} &'.format(f=fn))
 def pygview(fn):
+    """Opens gaussview over remote server"""
     if '.log' in fn:
         fn.replace('.log', '.chk')
 
@@ -90,7 +32,7 @@ def pygview(fn):
     os.system("ssh -Y cjf05@login.cx1.hpc.ic.ac.uk 'source /etc/profile.d/module.sh;module load gaussview;gview {d}{f}' &".format(d=scratch_dir,f=fn))
 
 
-#todo currently only works from Notebooks directory rather than inside subdirectories
+#todo currently only works from Notebooks directory rather than inside subdirectories + convert to jsmol
 #can't call IPython.core.display.HTML from a function but can return the object (or indeed any object with a _repr_html_ method that returns an html string
 #this has the downside that we can't delete the temporary file that we are using to hold jmol_basic_str, so instead we simply delete the temporary files left over
 #by previous calls at the beginning
@@ -336,6 +278,7 @@ def movie_from_frames(mol, use_fchk=False):
 
 
 def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
+    """Takes a list of ASE Atoms objects associated with Gaussian calculations and returns an HTML table with a smart log button for each calculation"""
     import os
 
     if any([not mol.calc or mol.calc.get_name() != 'Gaussian' for mol in list_mols]):
@@ -489,8 +432,8 @@ def gen_energy_table(products, reactants, delta=None):
 # see: http://ipython.org/ipython-doc/dev/interactive/reference.html
 # and
 # http://proj.badc.rl.ac.uk/cedaservices/browser/ipython/IPython/extensions/cythonmagic.py?rev=233076612d2815f8bfe098230e82fb9e3ca3749e
-import sys, os
-from IPython.core.magic import (Magics, magics_class, cell_magic)
+#import sys, os
+#from IPython.core.magic import (Magics, magics_class, cell_magic)
 
 #import pymol
 ## The class MUST call this class decorator at creation time
