@@ -85,7 +85,7 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
         vib_strs = ['' for i in range(len(rel_fs))]
 
     #this includes a title/titles, default is to use the filename
-    font_size = int(width/50)
+    font_size = int(float(width)/20)
     if title and isinstance(title, (list, tuple)):
         title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=title[i], s=font_size) for i in range(len(files))]
     elif title and isinstance(title, basestring):
@@ -95,7 +95,8 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
     else:
         title_strs = ['' for i in range(len(files))]
 
-    #this allows us to pass in a list of dictionaries each specifying different keywords for a different applet - i.e. multiple kwargs one for each applet
+    #this allows us to pass in a list of dictionaries each specifying different keywords for a different applet
+    # - i.e. multiple kwargs one for each applet
     atom_strs = []
     if params and len(params) != len(rel_fs):
             raise RuntimeError('Must supply parameters for every applet')
@@ -132,11 +133,11 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
 
 
     id_strs = ["id_" +  str(int(random.random()*10000000000000)) for f in rel_fs]
-    script_command_strs = ["load {f}; {init}; sync . SLAVE;".format(f=rel_f, init=init_string + vib_strs[i] + title_strs[i] + atom_strs[i] + script_strs[i]) for i, rel_f in enumerate(rel_fs)]
 
-    html_strs = ["""<div style=float:left><div id='applet_div_{id}'></div>
-    <a href="javascript:Jmol.script(applet_{id},'spin on')">spin</a>
-    <a href="javascript:Jmol.script(applet_{id},'spin off')">off</a></div>\n""".format(id=id_str) for id_str in id_strs]
+    #load the file initialise, turn off logo display and set default synchronisation to slave mode
+    script_command_strs = ["load {f}; {init}; set frank off; sync . SLAVE;".format(f=rel_f, init=init_string + vib_strs[i] + title_strs[i] + atom_strs[i] + script_strs[i]) for i, rel_f in enumerate(rel_fs)]
+
+    html_strs = ["""<div style=float:left><div id='applet_div_{id}'></div></div>\n""".format(id=id_str) for id_str in id_strs]
 
     html_str = "".join(html_strs)
 
@@ -175,11 +176,11 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
 #select all; connect delete; select atomno=500, atomno=199; connect single; color bonds green;select atomno=500, atomno=198; connect single; color bonds red;
 def color_by_delta(atoms1, atoms2):
     """returns the jmol script required to colour the bonds in atoms1 according to the difference in bond length between atoms1 and atoms2"""
-    import ase
+    from ase.io import read
     if isinstance(atoms1, basestring):
-        atoms1 = ase.io.read(atoms1)
+        atoms1 = read(atoms1)
     if isinstance(atoms2, basestring):
-        atoms2 = ase.io.read(atoms2)
+        atoms2 = read(atoms2)
 
     #bond_dist_delta returns two lists of the same length, the first is a list of bond indices, the second is a list of the changes in the bond length corresponding to that index
     bond_inds_delta = ASE_utils.bond_dist_delta(atoms1, atoms2)
@@ -228,7 +229,6 @@ def gen_movie(title, list_atoms):
 
     with open(title+'.xyz', 'w') as movie_f:
         xyz.write_xyz(movie_f, list_atoms)
-
 
 #views the difference between two molecules, better to use view_ipython_jmol using the delta keyword
 def view_delta(atoms1, atoms2, **kwargs):
@@ -355,7 +355,7 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
 def unwind(lst_of_lsts):
     return [e for l in lst_of_lsts for e in l]
 
-def copy_cells(from_notebook='', from_cells=(0,0), to_notebook='', at_cell=0):
+def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
 
     if '.ipynb' not in from_notebook:
         from_notebook += '.ipynb'
@@ -431,40 +431,3 @@ def gen_energy_table(products, reactants, delta=None):
         o_dft_delt_data = pandas.Series(delt_Es, names)
         d.update({'Rxn Energy Delta': o_dft_delt_data})
     return pandas.DataFrame(d)
-
-#pymol magic
-# see: http://ipython.org/ipython-doc/dev/interactive/reference.html
-# and
-# http://proj.badc.rl.ac.uk/cedaservices/browser/ipython/IPython/extensions/cythonmagic.py?rev=233076612d2815f8bfe098230e82fb9e3ca3749e
-#import sys, os
-#from IPython.core.magic import (Magics, magics_class, cell_magic)
-
-#import pymol
-## The class MUST call this class decorator at creation time
-#@magics_class
-#class MyMagics(Magics):
-#    @cell_magic
-#    def pyMol(line, cell):
-#        """Doc_String"""
-#        t_script_contents = ["import {md}".format(md=mod) for mod in sys.modules]
-#        t_script_contents += ["import pickle"]
-#        t_script_contents += ["{vr} = unpickle {vr_file}".format(vr=var, vr_file=var_file) for var, var_file in list_vs_vfiles]
-#        t_script_contents += [cell]
-#
-#        script_contents = "/n".join(t_script_contents)
-#        fname = 'temp_pymol_script' + '.py'
-#
-#        with open(fname,'w') as f:
-#            f.write(script_contents)
-#
-#        exitcode= os.system("pymol temp_pymol_script.py")
-#
-#        return 'Success' if not exitcode else 'Fail'
-#
-## In order to actually use these magics, you must register them with a
-## running IPython.  This code must be placed in a file that is loaded once
-## IPython is up and running:
-##ip = get_ipython()
-## You can register the class itself without instantiating it.  IPython will
-## call the default constructor on it.
-##ip.register_magics(MyMagics
