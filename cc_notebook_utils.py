@@ -1,17 +1,14 @@
 __author__ = 'clyde'
 
 from IPython.core import display
+from IPython.core.getipython import get_ipython
 import IPython.nbformat.current as nb_current
-import tempfile
+import random
 import os
 import copy
 import ASE_utils
 import numpy as np
 import pandas
-
-
-JMOL_PATH = '/home/clyde/Dropbox/Project Stuff/Notebooks/jmol'
-NOTEBOOK_PATH = '/home/clyde/Dropbox/Project Stuff/Notebooks/'
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
 def pyvim(fn):
@@ -31,17 +28,18 @@ def pygview(fn):
     scratch_dir = ASE_utils.get_equiv_scratch_dir()
     os.system("ssh -Y cjf05@login.cx1.hpc.ic.ac.uk 'source /etc/profile.d/module.sh;module load gaussview;gview {d}{f}' &".format(d=scratch_dir,f=fn))
 
+#requires jsmol to be present in profile/static/custom
+def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None, params=None, script=None, **kwargs):
+    """views a file with jsmol from within an ipython notebook.
 
-#todo currently only works from Notebooks directory rather than inside subdirectories + convert to jsmol
-#can't call IPython.core.display.HTML from a function but can return the object (or indeed any object with a _repr_html_ method that returns an html string
-#this has the downside that we can't delete the temporary file that we are using to hold jmol_basic_str, so instead we simply delete the temporary files left over
-#by previous calls at the beginning
-def view_ipython_jmol(files, width=400, height=300, label=False, title=True, vib=0, delta=None, params=None, script=None, **kwargs):
-    """views a file with jmol from within an ipython notebook, label (bool) shows atom no's, vib (int) shows the xth vibration is shown, title (bool/string, +/- list) titles the applets, delta (ase.atom/file) colours the molecules bonds by the difference between the bond lengths given in the files objects and those given by this keyword, kwargs commands and require subcommands and selection criteria e.g. color=['red', [0,1,2,3,4]], params (list) allows different kwarg dicts to be applied to the individual applets"""
+    label (bool) shows atom no's,
+    vib (int) shows the xth vibration is shown,
+    title (bool/string, +/- list) titles the applets,
+    delta (ase.atom/file) colours the molecules bonds by the difference between the bond lengths given in the files objects and those given by this keyword,
+    kwargs commands and require subcommands and selection criteria e.g. color=['red', [0,1,2,3,4]]
+    params (list) allows different kwarg dicts to be applied to the individual applets"""
+
     files = copy.deepcopy(files)
-
-    jmol_path = JMOL_PATH
-    notebook_path = NOTEBOOK_PATH
 
     #this means we can pass a single file string or a list of file_strings
     if not isinstance(files, (list, tuple)):
@@ -54,20 +52,17 @@ def view_ipython_jmol(files, width=400, height=300, label=False, title=True, vib
         except AttributeError:
             pass
 
+    notebook_path = get_ipython().starting_dir
+#    current_abs_path = os.getcwd()
+#    current_rel_path = os.path.relpath(current_abs_path, notebook_path)
+
     abs_fs = [os.path.abspath(f) for f in files]
-    rel_jmol_path = os.path.relpath(jmol_path, notebook_path)
-    rel_fs = [os.path.relpath(abs_f, jmol_path) for abs_f in abs_fs]
+    rel_fs = [os.path.relpath(abs_f, notebook_path) for abs_f in abs_fs]
 
-    #need another way of doing this because if we immediately delete we cannot have multiple molecules open at a time
-  # delete previous temp_files
-  # for fl in glob.glob('{pth}/*ase-*.html'.format(pth=jmol_path)):
-  #     os.remove(fl)
-
-    #we auto label by atom_no and set background to white
+    #we auto label by atom_no
     init_string = 'select all; '
     if label:
         init_string += 'label %[atomNo]; '
-    init_string += 'background [1 1 1];'
 
     #this allows us to pass in keywords that will be applied to the atoms specified (in all applets if there are multiple)
     if kwargs:
@@ -77,7 +72,8 @@ def view_ipython_jmol(files, width=400, height=300, label=False, title=True, vib
         init_string += atom_str
 
     #vibrations in a gaussian file start from frame 2 corresponding to the first vibration (frame 1 is the static molecule)
-    #so to specify the first frequency (which is the negative frequency in a transition state) we set vib=1 which loads frame 2, for more info see http://jmol.sourceforge.net/demo/vibration/
+    #so to specify the first frequency (which is the negative frequency in a transition state) we set vib=1 which loads frame 2
+    #for more info see http://jmol.sourceforge.net/demo/vibration/
     vib_strs = []
     if vib and not isinstance(vib, (list, tuple)):
         vib_strs = [' vectors on; color vectors yellow; move 10 -20 10 0 0 0 0 0 1; delay 1; vibration on; frame {n};'.format(n=vib+1) for i in range(len(rel_fs))]
@@ -90,11 +86,10 @@ def view_ipython_jmol(files, width=400, height=300, label=False, title=True, vib
 
     #this includes a title/titles, default is to use the filename
     font_size = int(width/50)
-    title_strs = []
     if title and isinstance(title, (list, tuple)):
-        title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=title[i],s=font_size) for i in range(len(files))]
+        title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=title[i], s=font_size) for i in range(len(files))]
     elif title and isinstance(title, basestring):
-        title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=title,s=font_size) for i in range(len(files))]
+        title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=title, s=font_size) for i in range(len(files))]
     elif title:
         title_strs = ['set echo echoname 50% 90%; font echo {s}; echo {t};'.format(t=files[i].split('.')[0],s=font_size) for i in range(len(files))]
     else:
@@ -135,38 +130,47 @@ def view_ipython_jmol(files, width=400, height=300, label=False, title=True, vib
             if f != delta:
                 script_strs[i] += color_by_delta(files[i], delta)
 
-    applet_strings = ['jmolApplet({h}, "load {xyz}; {init}; sync . on");'.format(h=height -50, init=init_string + vib_strs[i] + title_strs[i] + atom_strs[i] + script_strs[i], xyz= rel_f) for i,rel_f in enumerate(rel_fs)]
-    applet_string = '\n'.join(applet_strings)
-#    applet_string = 'jmolApplet({h}, load FILES '.format(h=height -50) + ' '.join(['"{xyz}"'.format(xyz= rel_f) for rel_f in rel_fs]) + '; {init}; sync . on");'.format(init=init_string)
 
-    jmol_basic_str="""<head><script type="text/javascript" src="Jmol.js"></script></head>
-    <body>
-    <script type="text/javascript">
-      jmolInitialize("");
-      jmolSetCallback("UseCommandThread","true");
-      {app_str}
-    </script>
-    </body>""".format(app_str = applet_string)
+    id_strs = ["id_" +  str(int(random.random()*10000000000000)) for f in rel_fs]
+    script_command_strs = ["load {f}; {init}; sync . SLAVE;".format(f=rel_f, init=init_string + vib_strs[i] + title_strs[i] + atom_strs[i] + script_strs[i]) for i, rel_f in enumerate(rel_fs)]
 
-    fd, jmol_html = tempfile.mkstemp('.' + 'html', 'ase-', dir=jmol_path)
-    fd = os.fdopen(fd, 'w')
-    fd.write(jmol_basic_str)
-    fd.close()
+    html_strs = ["""<div style=float:left><div id='applet_div_{id}'></div>
+    <a href="javascript:Jmol.script(applet_{id},'spin on')">spin</a>
+    <a href="javascript:Jmol.script(applet_{id},'spin off')">off</a></div>\n""".format(id=id_str) for id_str in id_strs]
 
-    max_h = int(1680 / width)
-    horizontal_stack = max_h if len(files) >=max_h else len(files)
-    vertical_stack = 1+int(len(files)/max_h) if len(files) % max_h else int(len(files)/max_h)
+    html_str = "".join(html_strs)
 
-    jmol_str = """
-    <iframe
-      width="{w}"
-      height="{h}"
-      src=/files/{r_jmol_path}/{src}
-      frameborder="0"
-      allowfullscreen
-    ></iframe>""".format(w=50 + (width-50) * horizontal_stack, h=110 + (height-110) * vertical_stack, r_jmol_path = rel_jmol_path, src=os.path.basename(jmol_html))
+    js_init_str = """//initialisation
+    var Info = {{
+        color: "#FFFFFF",
+        width: {w},
+        height: {h},
+        serverURL: "/static/custom/jsmol/jsmol.php ",
+        use: "HTML5",
+        j2sPath: "/static/custom/jsmol/j2s",
+        console: "jmolApplet0_infodiv"
+    }}
+    Jmol.setDocument(0)""".format(w=width, h=height)
 
-    return display.HTML(jmol_str)
+    js_applet_strs = ["""
+    //start applet
+    applet_{id} = Jmol.getApplet("applet_{id}", Info)
+    //insert applet into html
+    $("#applet_div_{id}").html(Jmol.getAppletHtml(applet_{id}))
+    //execute scripts
+    Jmol.script(applet_{id},"{c}")""".format(id=id_str, c=script_command_str) for id_str, script_command_str in zip(id_strs, script_command_strs)]
+
+    js_applet_str = "".join(js_applet_strs)
+
+    if sync:
+        js_script_str= '\nJmol.script(applet_{id}, "sync . ON; sync * set syncMouse off;set syncScript off")'.format(id=id_strs[0])
+    else:
+        js_script_str = ''
+
+    jsmol_str = html_str + '<script type="text/Javascript">' + js_init_str + js_applet_str + js_script_str + '</script>'
+
+    return display.HTML(jsmol_str)
+
 
 #select all; connect delete; select atomno=500, atomno=199; connect single; color bonds green;select atomno=500, atomno=198; connect single; color bonds red;
 def color_by_delta(atoms1, atoms2):
@@ -387,7 +391,7 @@ def gen_energy_table(products, reactants, delta=None):
         delt_Es = []
 
     for i in range(len(products)):
-        if isinstance(products[i], atoms):
+        if isinstance(products[i], atoms.Atoms):
             main_product = products[i]
             try:
                 product_E = products[i].calc.energy_zero
@@ -400,7 +404,7 @@ def gen_energy_table(products, reactants, delta=None):
             except AttributeError:
                 product_E = float('nan')
 
-        if isinstance(products[i], atoms):
+        if isinstance(reactants[i], atoms.Atoms):
             try:
                 reactant_E = reactants[i].calc.energy_zero
             except AttributeError:
@@ -420,7 +424,7 @@ def gen_energy_table(products, reactants, delta=None):
         rxn_Es.append(rxn_E)
         names.append(main_product.calc.label)
 
-    o_data = pandas.Series(rxn_Es ,names)
+    o_data = pandas.Series(rxn_Es, names)
     d = {'Rxn Energy': o_data}
 
     if delta:
