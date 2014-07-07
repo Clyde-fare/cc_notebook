@@ -62,7 +62,8 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
     #we auto label by atom_no
     init_string = 'select all; '
     if label:
-        init_string += 'label %[atomNo]; '
+        label_size = int(float(width)/40)
+        init_string += 'label %[atomNo]; font label {s};'.format(s=label_size)
 
     #this allows us to pass in keywords that will be applied to the atoms specified (in all applets if there are multiple)
     if kwargs:
@@ -132,7 +133,7 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
                 script_strs[i] += color_by_delta(files[i], delta)
 
 
-    id_strs = ["id_" +  str(int(random.random()*10000000000000)) for f in rel_fs]
+    id_strs = ["id_" + str(int(random.random()*10000000000000)) for f in rel_fs]
 
     #load the file initialise, turn off logo display and set default synchronisation to slave mode
     script_command_strs = ["load {f}; {init}; set frank off; sync . SLAVE;".format(f=rel_f, init=init_string + vib_strs[i] + title_strs[i] + atom_strs[i] + script_strs[i]) for i, rel_f in enumerate(rel_fs)]
@@ -151,18 +152,20 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
         j2sPath: "/static/custom/jsmol/j2s",
         console: "jmolApplet0_infodiv"
     }}
+    //prevent applet from immediately generating html - allows us to place the applet in the div we wish
     Jmol.setDocument(0)""".format(w=width, h=height)
 
     js_applet_strs = ["""
     //start applet
     applet_{id} = Jmol.getApplet("applet_{id}", Info)
-    //insert applet into html
+    //insert applet html into applet_div_{id}
     $("#applet_div_{id}").html(Jmol.getAppletHtml(applet_{id}))
     //execute scripts
     Jmol.script(applet_{id},"{c}")""".format(id=id_str, c=script_command_str) for id_str, script_command_str in zip(id_strs, script_command_strs)]
 
     js_applet_str = "".join(js_applet_strs)
 
+    #so slow in jsmol it's almost unuseable
     if sync:
         js_script_str= '\nJmol.script(applet_{id}, "sync . ON; sync * set syncMouse off;set syncScript off")'.format(id=id_strs[0])
     else:
@@ -220,9 +223,9 @@ def color_by_delta(atoms1, atoms2):
     return script_str
 
 
-def view_jmol(atoms, width=400, height=300, label=True):
+def view_jmol(atoms, *args, **kwargs):
     atoms.write('temp_atoms.xyz')
-    return view_ipython_jmol('temp_atoms.xyz',width, height, label)
+    return view_ipython_jmol('temp_atoms.xyz', *args, **kwargs)
 
 def gen_movie(title, list_atoms):
     from ase.io import xyz

@@ -2,4 +2,4 @@ Copy cc_notebook.js into your ipython profile custom javascript directory. (the 
 Then add the following line to the last line of custom.js:
 
 require(['custom/cc_notebook'])
-
+require(['custom/jsmol/JSmol.min.nojq'])
