@@ -12,8 +12,8 @@ import pandas
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
 def pyvim(fn):
-    """Opens default editor"""
-    os.system('editor {f} &'.format(f=fn))
+    """Opens gvim"""
+    os.system('gvim {f} &'.format(f=fn))
 def pyvogadro(fn):
     """Opens avogadro"""
     os.system('avogadro {f} &'.format(f=fn))
