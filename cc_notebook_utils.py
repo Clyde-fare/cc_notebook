@@ -2,7 +2,10 @@ __author__ = 'clyde'
 
 from IPython.core import display
 from IPython.core.getipython import get_ipython
+from IPython.nbformat import current
 import IPython.nbformat.current as nb_current
+import io
+import re
 import random
 import os
 import copy
@@ -233,44 +236,6 @@ def gen_movie(title, list_atoms):
     with open(title+'.xyz', 'w') as movie_f:
         xyz.write_xyz(movie_f, list_atoms)
 
-#views the difference between two molecules, better to use view_ipython_jmol using the delta keyword
-def view_delta(atoms1, atoms2, **kwargs):
-    #bond_dist_delta returns two lists of the same length, the first is a list of bond indices, the second is a list of the changes in the bond length corresponding to that index
-    bond_inds_delta = ASE_utils.bond_dist_delta(atoms1, atoms2)
-
-    #creates a list of bonds (bond_ind, bond_delta)
-    z_bond_inds_delta = zip(*bond_inds_delta)
-
-    #separates out bonds which have grown vs. those which have shrunk
-    try:
-        p_bond_inds, p_bond_delta = zip(*[e for e in z_bond_inds_delta if e[1]>0])
-    except ValueError:
-        p_bond_inds, p_bond_delta = [], []
-
-    try:
-        n_bond_inds, n_bond_delta = zip(*[e for e in z_bond_inds_delta if e[1]<0])
-    except ValueError:
-        n_bond_inds, n_bond_delta = [],[]
-
-    #zipping and unzipping turns the original numpy arrays into tuples so we turn them back
-    p_bond_delta = np.array(p_bond_delta)
-    n_bond_delta = np.array(n_bond_delta)
-
-    #scale bond_delta, strange that we have to convert to a float for the division - seems to be a numpy bug
-    max1 = max(p_bond_delta)
-    max2 = abs(min(n_bond_delta))
-    p_bond_delta /= float(max([max1,max2]))
-    n_bond_delta /= float(max([max1,max2]))
-
-    delete_bonds_str = 'select all; connect delete;'
-    #jmol assumes that rgb values either go from 0. to 1. or from 1.1 (not 1.0) so we use the scaled bond_delta values
-    color_p_bonds_str = ''.join(["select atomno={atom1_ind}, atomno={atom2_ind}; connect single; color bonds [{r} 0 0];".format(atom1_ind = p_bond_inds[i][0]+1, atom2_ind = p_bond_inds[i][1]+1, r=p_bond_delta[i]) for i in range(len(p_bond_delta))])
-    color_n_bonds_str = ''.join(["select atomno={atom1_ind}, atomno={atom2_ind}; connect single; color bonds [0 0 {b}];".format(atom1_ind = n_bond_inds[i][0]+1, atom2_ind = n_bond_inds[i][1]+1, b=abs(n_bond_delta[i])) for i in range(len(n_bond_delta))])
-
-    script_str = delete_bonds_str + color_p_bonds_str + color_n_bonds_str
-
-    return view_ipython_jmol(atoms1, script=script_str, **kwargs)
-
 def movie_from_frames(mol, use_fchk=False):
     import ase
 
@@ -385,52 +350,52 @@ def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
     with open(to_notebook, 'w') as nb2_f:
         nb2_f.write(nb2_modified_raw)
 
-def gen_energy_table(products, reactants, delta=None):
-    from ase import atoms
-    rxn_Es = []
-    names = []
 
-    if delta:
-        delt_Es = []
 
-    for i in range(len(products)):
-        if isinstance(products[i], atoms.Atoms):
-            main_product = products[i]
-            try:
-                product_E = products[i].calc.energy_zero
-            except AttributeError:
-                product_E = float('nan')
-        else:
-            main_product = products[i][0]
-            try:
-                product_E = sum([p.calc.energy_zero for p in products[i]])
-            except AttributeError:
-                product_E = float('nan')
+def extract_linked_nb(mkdn_cell):
+    nb_link_extractor = re.compile("(?<=\]\().+ipynb")
+    linked_nbs = nb_link_extractor.findall(mkdn_cell['source'])
+    return linked_nbs
 
-        if isinstance(reactants[i], atoms.Atoms):
-            try:
-                reactant_E = reactants[i].calc.energy_zero
-            except AttributeError:
-                reactant_E = float('nan')
-        else:
-            try:
-                reactant_E = sum([r.calc.energy_zero for r in reactants[i]])
-            except AttributeError:
-                reactant_E = float('nan')
+def inherit_upto_cell(nb_name, cell_id=-1, silent=False):
+    """inherits from another notebook up to cell number cell_id"""
 
-        rxn_E = 23.060542301388647 * (product_E - reactant_E)
+    ip = get_ipython()
 
-        if delta:
-            delt_E = rxn_E - delta
-            delt_Es.append(delt_E)
+    if '.ipynb' not in nb_name:
+        nb_name += '.ipynb'
 
-        rxn_Es.append(rxn_E)
-        names.append(main_product.calc.label)
+    with io.open(nb_name) as f:
+        ancestor_nb = current.read(f, 'json')
 
-    o_data = pandas.Series(rxn_Es, names)
-    d = {'Rxn Energy': o_data}
+    code_cells = [cell for cell in ancestor_nb.worksheets[0].cells if cell.cell_type == 'code']
 
-    if delta:
-        o_dft_delt_data = pandas.Series(delt_Es, names)
-        d.update({'Rxn Energy Delta': o_dft_delt_data})
-    return pandas.DataFrame(d)
+    if cell_id == -1:
+        cell_id = len(code_cells)
+        print('Inheriting entire notebook')
+
+    ancestor_code_cells = [cell for i,cell in enumerate(code_cells) if i <= cell_id]
+
+    for cell in ancestor_code_cells:
+        ip.run_cell(cell.input, silent=silent)
+
+    return
+
+def inherit_from(nb_name, uptolink='', silent=False):
+    if '.ipynb' not in nb_name:
+        nb_name += '.ipynb'
+
+    with io.open(nb_name) as f:
+        ancestor_nb = current.read(f, 'json')
+
+    cell_id=-1
+    for cell in ancestor_nb.worksheets[0].cells:
+        if cell.cell_type == 'code':
+            cell_id+=1
+        if cell.cell_type == 'markdown' and uptolink in extract_linked_nb(cell):
+            break
+    else:
+        inherit_upto_cell(nb_name, cell_id=-1, silent=silent)
+        return
+
+    inherit_upto_cell(nb_name, cell_id=cell_id, silent=silent)
