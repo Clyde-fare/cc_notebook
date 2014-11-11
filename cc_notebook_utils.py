@@ -2,7 +2,6 @@ __author__ = 'clyde'
 
 from IPython.core import display
 from IPython.core.getipython import get_ipython
-from IPython.nbformat import current
 import IPython.nbformat.current as nb_current
 import io
 import re
@@ -11,12 +10,14 @@ import os
 import copy
 import ASE_utils
 import numpy as np
-import pandas
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
 def pyvim(fn):
     """Opens gvim"""
     os.system('gvim {f} &'.format(f=fn))
+def pymvim(fn):
+    """Opens mvim"""
+    os.system('mvim {f} &'.format(f=fn))
 def pyvogadro(fn):
     """Opens avogadro"""
     os.system('avogadro {f} &'.format(f=fn))
@@ -24,6 +25,9 @@ def pygausssum(fn):
     """Opens Gaussum"""
     os.system('GaussSum.py {f} &'.format(f=fn))
 def pygview(fn):
+    """ Opens gaussview"""
+    os.system('gaussview {f} &'.format(f=fn))
+def pygview_remote(fn):
     """Opens gaussview over remote server"""
     if '.log' in fn:
         fn.replace('.log', '.chk')
@@ -31,8 +35,10 @@ def pygview(fn):
     scratch_dir = ASE_utils.get_equiv_scratch_dir()
     os.system("ssh -Y cjf05@login.cx1.hpc.ic.ac.uk 'source /etc/profile.d/module.sh;module load gaussview;gview {d}{f}' &".format(d=scratch_dir,f=fn))
 
+
 #requires jsmol to be present in profile/static/custom
-def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None, params=None, script=None, **kwargs):
+def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None,
+                      params=None, script=None, **kwargs):
     """views a file with jsmol from within an ipython notebook.
 
     label (bool) shows atom no's,
@@ -48,12 +54,28 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
     if not isinstance(files, (list, tuple)):
         files = [files]
 
-    #means we can pass Ase molecules instead of files
+    #means we can pass Ase molecules instead of files (need to be careful if the ase object geometry
+    #and the .log file don't match  e.g. after a geometry optimisation, we opt to look at the log
+    #file geometry if it's defined
+
     for i in range(len(files)):
         try:
-            files[i] = files[i].calc.label +'.log'
+            #if we have a Gaussian calculator with a log file use that
+            files[i] = files[i].calc.log
         except AttributeError:
-            pass
+            #if we have an ase object write an xyz file and use that
+            try:
+                #if the ase object has a single-point calculator with a label variable use that as the filename
+                fn = files[i].calc.label + '.xyz'
+            except AttributeError:
+                #otherwise use a temporary name
+                fn = 'temp_atoms_{}.xyz'.format(i)
+
+            try:
+                files[i].write(fn)
+                files[i] = fn
+            except AttributeError:
+                pass
 
     notebook_path = get_ipython().starting_dir
 #    current_abs_path = os.getcwd()
@@ -108,7 +130,7 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
         for p in params:
             atom_str = ""
             for arg in p:
-                atom_str+= 'select ' + ','.join(['atomno={no}'.format(no=num+1) for num in p[arg][1]]) + '; {command} {sub_command};'.format(command = arg, sub_command = p[arg][0])
+                atom_str += 'select ' + ','.join(['atomno={no}'.format(no=num+1) for num in p[arg][1]]) + '; {command} {sub_command};'.format(command = arg, sub_command = p[arg][0])
             atom_strs.append(atom_str)
     else:
         atom_strs = ['' for i in range(len(rel_fs))]
@@ -225,6 +247,21 @@ def color_by_delta(atoms1, atoms2):
 
     return script_str
 
+def color_by_curvature(atoms, colorise=None):
+    """Returns a script to color a jsmol molecule by the dihedral of an atom with it's three neighboring atoms"""
+
+    dihedral_data = ASE_utils.sp2_dihedrals(atoms)
+    ignored_atoms = [i for i in range(len(atoms)) if i not in zip(*dihedral_data)[0]]
+    ignored_atom_str = "select " +  ','.join(['atomno={no}'.format(no=ind+1) for ind in ignored_atoms]) + "; color atoms [255 255 255]; "
+    abs_dihedral_f = lambda a: abs(a) if abs(a) < 90 else abs(abs(a)-180)
+    abs_dihedrals = [abs_dihedral_f(d) for i, d in dihedral_data]
+
+    if not colorise:
+        colorise = lambda abs_d: abs_d/max(abs_dihedrals)
+
+    color_atoms_str = ''.join(["select atomno={no}; color atoms [{r} 0 0];".format(no=ind+1, r=colorise(abs_dihedral_f(dihedral))) for (ind, dihedral) in dihedral_data])
+    script_str = ignored_atom_str + color_atoms_str
+    return script_str
 
 def view_jmol(atoms, *args, **kwargs):
     atoms.write('temp_atoms.xyz')
@@ -253,7 +290,7 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
     """Takes a list of ASE Atoms objects associated with Gaussian calculations and returns an HTML table with a smart log button for each calculation"""
     import os
 
-    if any([not mol.calc or mol.calc.get_name() != 'Gaussian' for mol in list_mols]):
+    if any([not mol.calc or 'Gaussian' not in mol.calc.get_name() for mol in list_mols]):
         raise RuntimeError('currently only implemented for Gaussian')
 
     if not colour:
@@ -323,6 +360,7 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
 def unwind(lst_of_lsts):
     return [e for l in lst_of_lsts for e in l]
 
+
 def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
 
     if '.ipynb' not in from_notebook:
@@ -351,11 +389,12 @@ def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
         nb2_f.write(nb2_modified_raw)
 
 
-
 def extract_linked_nb(mkdn_cell):
+    """Extracts url links to other notebooks from a markdown cell"""
     nb_link_extractor = re.compile("(?<=\]\().+ipynb")
     linked_nbs = nb_link_extractor.findall(mkdn_cell['source'])
     return linked_nbs
+
 
 def inherit_upto_cell(nb_name, cell_id=-1, silent=False):
     """inherits from another notebook up to cell number cell_id"""
@@ -366,7 +405,7 @@ def inherit_upto_cell(nb_name, cell_id=-1, silent=False):
         nb_name += '.ipynb'
 
     with io.open(nb_name) as f:
-        ancestor_nb = current.read(f, 'json')
+        ancestor_nb = nb_current.read(f, 'json')
 
     code_cells = [cell for cell in ancestor_nb.worksheets[0].cells if cell.cell_type == 'code']
 
@@ -374,21 +413,28 @@ def inherit_upto_cell(nb_name, cell_id=-1, silent=False):
         cell_id = len(code_cells)
         print('Inheriting entire notebook')
 
-    ancestor_code_cells = [cell for i,cell in enumerate(code_cells) if i <= cell_id]
+    ancestor_code_cells = [cell for i, cell in enumerate(code_cells) if i <= cell_id]
 
     for cell in ancestor_code_cells:
         ip.run_cell(cell.input, silent=silent)
 
     return
 
+
 def inherit_from(nb_name, uptolink='', silent=False):
+    """Inherits code from notebook 'nb_name' up to the point where a link to 'uptolink' is found in a markdown cell of nb_name"""
+
     if '.ipynb' not in nb_name:
         nb_name += '.ipynb'
 
+    if '.ipynb' not in uptolink:
+        uptolink += '.ipynb'
+
     with io.open(nb_name) as f:
-        ancestor_nb = current.read(f, 'json')
+        ancestor_nb = nb_current.read(f, 'json')
 
     cell_id=-1
+
     for cell in ancestor_nb.worksheets[0].cells:
         if cell.cell_type == 'code':
             cell_id+=1
