@@ -27,14 +27,6 @@ def pygausssum(fn):
 def pygview(fn):
     """ Opens gaussview"""
     os.system('gaussview {f} &'.format(f=fn))
-def pygview_remote(fn):
-    """Opens gaussview over remote server"""
-    if '.log' in fn:
-        fn.replace('.log', '.chk')
-
-    scratch_dir = ASE_utils.get_equiv_scratch_dir()
-    os.system("ssh -Y cjf05@login.cx1.hpc.ic.ac.uk 'source /etc/profile.d/module.sh;module load gaussview;gview {d}{f}' &".format(d=scratch_dir,f=fn))
-
 
 #requires jsmol to be present in profile/static/custom
 def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None,
