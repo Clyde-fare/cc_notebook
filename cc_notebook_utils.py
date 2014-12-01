@@ -263,6 +263,18 @@ def color_by_curvature(atoms, colorise=None):
     script_str = ignored_atom_str + color_atoms_str
     return script_str
 
+def color_bonds_by_mag(set_bond_inds, mags, inv=False, colorise=None):
+    """Colors bonds specified by set_bond_inds by values in mags"""
+
+    mags = np.array(mags)
+    if not colorise:
+        colorise = lambda m: abs(int(inv)-((m-mags.min())/(mags.max()-mags.min()))**3)
+
+    bond_mags = [list(b) + [i] for b,i in zip(set_bond_inds, mags)]
+    color_bonds_str = ''.join(["select atomno={atom1_ind}, atomno={atom2_ind}; connect single; color bonds [{r} 0 0];".format(atom1_ind = b1+1, atom2_ind = b2+1, r=colorise(m)) for b1,b2,m in bond_mags])
+
+    return  color_bonds_str
+
 def view_jmol(atoms, *args, **kwargs):
     atoms.write('temp_atoms.xyz')
     return view_ipython_jmol('temp_atoms.xyz', *args, **kwargs)
