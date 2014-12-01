@@ -300,7 +300,6 @@ def movie_from_frames(mol, use_fchk=False):
 
 def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
     """Takes a list of ASE Atoms objects associated with Gaussian calculations and returns an HTML table with a smart log button for each calculation"""
-    import os
 
     if any([not mol.calc or 'Gaussian' not in mol.calc.get_name() for mol in list_mols]):
         raise RuntimeError('currently only implemented for Gaussian')
@@ -319,7 +318,6 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
     names = [mol.calc.label for mol in list_mols]
     #since IPython 2.0, javascript has to be defined in the profile_{}/static/custom/custom.js which is where IPython.cc_notebook.* is defined
     log_links = ['<input type="button" value="Smart Log" id="{n}" onclick="IPython.cc_notebook.view_function(event, this.id)" />'.format(n=mol.calc.label) for mol in list_mols]
-    com_links = ['<a href = "files/{p}/{n}.com" target = "_blank">com</a>'.format(p=os.path.relpath(os.getcwd(),'/home/clyde/Dropbox/Project Stuff/Notebooks/'), n=mol.calc.label) for mol in list_mols]
     status = [mol.calc.status for mol in list_mols]
     notes = [mol.calc.notes for mol in list_mols]
 
@@ -349,12 +347,13 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
     <table bgcolor="{c}">
     <col/>""".format(c=colour)
 
-    switch_dict = {0: names, 1: com_links, 2: log_links, 3: status, 4: notes, 5: ad_data}
+    switch_dict = {0: names, 1: log_links, 2: status, 3: notes, 4: ad_data}
     lst_table_eles = []
 
+    table_eles = ''
     for i in range(len(list_mols)):
-        temp_data = [names[i], com_links[i], log_links[i], status[i], notes[i], ad_data[i]]
-        row_data = [data for n, data in enumerate(temp_data) if any(switch_dict[n]) or n==5 and data_func]
+        temp_data = [names[i], log_links[i], status[i], notes[i], ad_data[i]]
+        row_data = [data for n, data in enumerate(temp_data) if any(switch_dict[n]) or n==4 and data_func]
         row_element = '<tr>' + ''.join(['<td>{d}</td>'.format(d=datum) for datum in row_data]) + '</tr>'
         lst_table_eles.append(row_element)
         table_eles = ''.join(lst_table_eles)
