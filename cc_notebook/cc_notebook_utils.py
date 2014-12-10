@@ -8,7 +8,7 @@ import re
 import random
 import os
 import copy
-import ASE_utils
+from ASE_extensions import ASE_utils
 import numpy as np
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
