@@ -1,0 +1,8 @@
+To enable jsmol the jsmol directory needs to be copied to this directory
+
+To get the latest version of the jsmol directory:
+
+Download the latest jmol binary tar.gz file (http://sourceforge.net/projects/jmol/)
+From Jmol-x-binary.tar.gz navigate to the jmol directory and extract jsmol.zip file
+From the extracted jsmol.zip extract the jsmol directory 
+copy/move the jsmol directory to this folder

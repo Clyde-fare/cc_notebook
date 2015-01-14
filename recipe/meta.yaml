@@ -1,0 +1,21 @@
+package:
+  name: cc-notebook
+  version: 0.1
+
+source:
+  git_url: https://github.com/Clyde-fare/cc_notebook.git
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - python
+
+  run:
+    - numpy
+    - ase ==3.8.2.dev
+    - ase-extensions ==0.1
+    - molmod ==1.01
+    - cc-utils ==0.1
+    - ipython-notebook >=2

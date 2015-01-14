@@ -8,8 +8,11 @@ import re
 import random
 import os
 import copy
-from ASE_extensions import ASE_utils
+from ase_extensions import ase_utils
+from .install import enable_notebook
 import numpy as np
+
+enable_notebook()
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
 def pyvim(fn):
@@ -28,7 +31,6 @@ def pygview(fn):
     """ Opens gaussview"""
     os.system('gaussview {f} &'.format(f=fn))
 
-#requires jsmol to be present in profile/static/custom
 def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None,
                       params=None, script=None, **kwargs):
     """views a file with jsmol from within an ipython notebook.
@@ -164,9 +166,9 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
         color: "#FFFFFF",
         width: {w},
         height: {h},
-        serverURL: "/static/custom/jsmol/jsmol.php ",
+        serverURL: "/nbextensions/jsmol/jsmol.php ",
         use: "HTML5",
-        j2sPath: "/static/custom/jsmol/j2s",
+        j2sPath: "/nbextensions/jsmol/j2s",
         console: "jmolApplet0_infodiv"
     }}
     //prevent applet from immediately generating html - allows us to place the applet in the div we wish
@@ -203,7 +205,7 @@ def color_by_delta(atoms1, atoms2):
         atoms2 = read(atoms2)
 
     #bond_dist_delta returns two lists of the same length, the first is a list of bond indices, the second is a list of the changes in the bond length corresponding to that index
-    bond_inds_delta = ASE_utils.bond_dist_delta(atoms1, atoms2)
+    bond_inds_delta = ase_utils.bond_dist_delta(atoms1, atoms2)
 
     #creates a list of bonds (bond_ind, bond_delta)
     z_bond_inds_delta = zip(*bond_inds_delta)
@@ -242,7 +244,7 @@ def color_by_delta(atoms1, atoms2):
 def color_by_curvature(atoms, colorise=None):
     """Returns a script to color a jsmol molecule by the dihedral of an atom with it's three neighboring atoms"""
 
-    dihedral_data = ASE_utils.sp2_dihedrals(atoms)
+    dihedral_data = ase_utils.sp2_dihedrals(atoms)
     ignored_atoms = [i for i in range(len(atoms)) if i not in zip(*dihedral_data)[0]]
     ignored_atom_str = "select " +  ','.join(['atomno={no}'.format(no=ind+1) for ind in ignored_atoms]) + "; color atoms [255 255 255]; "
     abs_dihedral_f = lambda a: abs(a) if abs(a) < 90 else abs(abs(a)-180)
@@ -308,7 +310,6 @@ def mols_to_html(list_mols, data_func=None, sort=None, colour=None):
     #html_script = jscript
 
     names = [mol.calc.label for mol in list_mols]
-    #since IPython 2.0, javascript has to be defined in the profile_{}/static/custom/custom.js which is where IPython.cc_notebook.* is defined
     log_links = ['<input type="button" value="Smart Log" id="{n}" onclick="IPython.cc_notebook.view_function(event, this.id)" />'.format(n=mol.calc.label) for mol in list_mols]
     status = [mol.calc.status for mol in list_mols]
     notes = [mol.calc.notes for mol in list_mols]
