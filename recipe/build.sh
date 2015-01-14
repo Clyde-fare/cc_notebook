@@ -1,6 +1,9 @@
 #!/bin/bash
 
+if [ ! -f ~/.cc_notebook.ini ]; then
+   cp .cc_notebook.ini ~
 $PYTHON setup.py install
+fi
 
 # Add more build steps here, if they are necessary.
 
