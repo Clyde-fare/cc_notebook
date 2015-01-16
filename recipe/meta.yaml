@@ -17,5 +17,4 @@ requirements:
     - ase ==3.8.2.dev
     - ase-extensions ==0.1
     - molmod ==1.01
-    - cc-utils ==0.1
     - ipython-notebook >=2
