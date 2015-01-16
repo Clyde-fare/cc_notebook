@@ -1,17 +1,18 @@
 __author__ = 'clyde'
 
-from IPython.core import display
-from IPython.core.getipython import get_ipython
-import IPython.nbformat.current as nb_current
 import io
 import re
 import random
 import os
 import copy
+import numpy as np
+from IPython.core import display
+import IPython.nbformat.current as nb_current
+from IPython.core.getipython import get_ipython
 from ase_extensions import ase_utils
 from .install import enable_notebook
-import numpy as np
 
+# activates javascript dependencies
 enable_notebook()
 
 #python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
@@ -71,11 +72,11 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
             except AttributeError:
                 pass
 
-    notebook_path = get_ipython().starting_dir
+    notebook_path = os.path.realpath(get_ipython().starting_dir)
 #    current_abs_path = os.getcwd()
 #    current_rel_path = os.path.relpath(current_abs_path, notebook_path)
 
-    abs_fs = [os.path.abspath(f) for f in files]
+    abs_fs = [os.path.realpath(f) for f in files]
     rel_fs = [os.path.relpath(abs_f, notebook_path) for abs_f in abs_fs]
 
     #we auto label by atom_no
