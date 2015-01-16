@@ -23,5 +23,5 @@ def enable_notebook(verbose=0):
     libs = ['cc_notebook.js', 
             'jsmol']
     fns = [resource_filename('cc_notebook', os.path.join('static', f)) for f in libs]
-    install_nbextension(fns, verbose=verbose, overwrite=True)
+    install_nbextension(fns, verbose=verbose, overwrite=False)
     display(activate_nb)
