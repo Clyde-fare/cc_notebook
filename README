@@ -9,5 +9,13 @@ cclib for extracting data
 
 Offers a local Gaussian calculator object that sends calculations to be executed remotely on a pbs-torque cluster
 
+Install from anaconda via:
+
+  conda install --channel https://conda.binstar.org/Clyde_Fare cc-notebook
+
+For the expanded gaussian calculator that can send calculations to a cluster:
+
+  conda install --channel https://conda.binstar.org/Clyde_Fare gausspy
+
 Installation creates a .cc_notebook.ini file in your home directory fill out the relevant sections
 
