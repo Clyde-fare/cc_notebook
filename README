@@ -1,10 +1,18 @@
-Instalation creates a .cc_notebook.ini file in your home directory fill out the relevant sections
+Haystack: The compuational chemistry notebook
+------------------------
 
-To enable jsmol the jsmol directory needs to be copied to the cc_notebook/static  directory
+Quantum chemistry inside an IPython notebook.
 
-Download the latest jmol binary tar.gz file (http://sourceforge.net/projects/jmol/)
-From Jmol-x-binary.tar.gz navigate to the jmol directory and extract jsmol.zip file
-From the extracted jsmol.zip extract the jsmol directory 
-copy/move the jsmol directory to the cc_notebook/static  directory
+Based on the atomic simulaton environment for constructon of ab-initio calculations
+JSMol for visualisaton
+cclib for extracting data
 
+Offers a local Gaussian calculator object that sends calculations to be executed remotely on a pbs-torque cluster
+
+Install from anaconda via:
+
+  conda install --channel https://conda.binstar.org/Clyde_Fare cc-notebook
+  conda install --channel https://conda.binstar.org/Clyde_Fare gausspy
+  
+Installation creates a .cc_notebook.ini file in your home directory fill out the relevant sections
 
