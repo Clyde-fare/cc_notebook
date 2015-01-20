@@ -6,6 +6,7 @@ import random
 import os
 import copy
 import numpy as np
+import ConfigParser
 from IPython.core import display
 import IPython.nbformat.current as nb_current
 from IPython.core.getipython import get_ipython
@@ -15,22 +16,26 @@ from .install import enable_notebook
 # activates javascript dependencies
 enable_notebook()
 
-#python functions to open vim/avogadro/gaussum/gaussview that are used by cc_notebook.js to enable a smart-log button
-def pyvim(fn):
-    """Opens gvim"""
-    os.system('gvim {f} &'.format(f=fn))
-def pymvim(fn):
-    """Opens mvim"""
-    os.system('mvim {f} &'.format(f=fn))
-def pyvogadro(fn):
-    """Opens avogadro"""
-    os.system('avogadro {f} &'.format(f=fn))
-def pygausssum(fn):
-    """Opens Gaussum"""
-    os.system('GaussSum.py {f} &'.format(f=fn))
-def pygview(fn):
-    """ Opens gaussview"""
-    os.system('gaussview {f} &'.format(f=fn))
+config = ConfigParser.RawConfigParser()
+config.read(os.path.expanduser('~/.cc_notebook.ini'))
+
+#python functions to used by cc_notebook.js to enable a smart-log button, actual programs used set in ~/.cc_notebook.ini
+
+def click(fn):
+    command = config.get('smart logs', 'click') + ' ' + fn + ' &'
+    os.system(command)
+
+def s_click(fn):
+    command = config.get('smart logs', 'shift_click') + ' ' + fn + ' &'
+    os.system(command)
+
+def c_click(fn):
+    command = config.get('smart logs', 'cntrl_click') + ' ' + fn + ' &'
+    os.system(command)
+
+def cs_click(fn):
+    command = config.get('smart logs', 'cntrl_shift_click') + ' ' + fn + ' &'
+    os.system(command)
 
 def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, title=True, vib=0, delta=None,
                       params=None, script=None, **kwargs):
