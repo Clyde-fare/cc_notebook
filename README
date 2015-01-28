@@ -7,12 +7,21 @@ Based on the atomic simulaton environment for constructon of ab-initio calculati
 JSMol for visualisaton
 cclib for extracting data
 
-Offers a local Gaussian calculator object that sends calculations to be executed remotely on a pbs-torque cluster
+Offers a local Gaussian calculator object that can send calculations to be executed remotely on a pbs-torque cluster
 
 Install from anaconda via:
 
   conda install --channel https://conda.binstar.org/Clyde_Fare cc-notebook
   conda install --channel https://conda.binstar.org/Clyde_Fare gausspy
-  
-Installation creates a .cc_notebook.ini file in your home directory fill out the relevant sections
+  cc_notebook_init
 
+a .cc_notebook.ini file is created by the cc_notebook_init command and placed in your home directory.
+
+Details particular to your setup need to be filled in.
+
+The ase_home and ase_scratch directories need to be set to the directory the notebook server will be run in.
+The gauss_home and gauss_scratch directories need to be set to the equivalent directory on the cluster
+
+To run calculations remotely on a PBS server, Haystack must also be installed and initialised on the cluster.
+The .cc_notebook.ini file on the cluster should have ase_home and ase_scratch set to the cluster's directories
+(i.e. to the gauss_home and gauss_scratch values on the local machines .cc_notebook.ini file.
