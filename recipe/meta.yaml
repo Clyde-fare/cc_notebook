@@ -3,7 +3,7 @@ package:
   version: 0.1
 
 source:
-  git_url: https://github.com/Clyde-fare/cc_notebook.git
+  git_url: https://github.com/Clyde-fare/cc-notebook.git
   #path: ../
 build:
   number: 1
