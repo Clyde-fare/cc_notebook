@@ -1,0 +1,4 @@
+package: cc-notebook
+script:
+  - conda build .
+build_targets: conda

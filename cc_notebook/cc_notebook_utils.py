@@ -10,10 +10,9 @@ import ConfigParser
 from IPython.core import display
 import IPython.nbformat.current as nb_current
 from IPython.core.getipython import get_ipython
-from ase_extensions import ase_utils
 from .install import enable_notebook
 
-# activates javascript dependencies
+# activvates javascript dependencies
 enable_notebook()
 
 config = ConfigParser.RawConfigParser()
@@ -205,6 +204,8 @@ def view_ipython_jmol(files, width=300, height=300, sync=False, label=False, tit
 def color_by_delta(atoms1, atoms2):
     """returns the jmol script required to colour the bonds in atoms1 according to the difference in bond length between atoms1 and atoms2"""
     from ase.io import read
+    from ase_extensions import ase_utils
+
     if isinstance(atoms1, basestring):
         atoms1 = read(atoms1)
     if isinstance(atoms2, basestring):
@@ -249,6 +250,7 @@ def color_by_delta(atoms1, atoms2):
 
 def color_by_curvature(atoms, colorise=None):
     """Returns a script to color a jsmol molecule by the dihedral of an atom with it's three neighboring atoms"""
+    from ase_extensions import ase_utils
 
     dihedral_data = ase_utils.sp2_dihedrals(atoms)
     ignored_atoms = [i for i in range(len(atoms)) if i not in zip(*dihedral_data)[0]]

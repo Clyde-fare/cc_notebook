@@ -3,8 +3,8 @@ package:
   version: 0.1
 
 source:
-  #git_url: https://github.com/Clyde-fare/cc_notebook.git
-  path: ../
+  git_url: https://github.com/Clyde-fare/cc_notebook.git
+  #path: ../
 build:
   number: 1
 
@@ -22,3 +22,6 @@ requirements:
     - ase-extensions ==0.1
     - molmod ==1.01
     - ipython-notebook >=2
+  
+about:
+  summary: This is the cc-notebook recipe
