@@ -1,4 +1,18 @@
 package: cc-notebook
+
 script:
   - conda build .
+
 build_targets: conda
+
+engine:
+ - python=2
+ - python=3
+
+env:
+ - CONDA_NPY=18
+ - CONDA_NPY=19
+
+install:
+  - conda config --add channels Clyde_Fare
+

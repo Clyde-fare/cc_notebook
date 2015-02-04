@@ -12,7 +12,7 @@ import IPython.nbformat.current as nb_current
 from IPython.core.getipython import get_ipython
 from .install import enable_notebook
 
-# activvates javascript dependencies
+# activates javascript dependencies
 enable_notebook()
 
 config = ConfigParser.RawConfigParser()
