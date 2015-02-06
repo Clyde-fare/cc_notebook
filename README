@@ -15,6 +15,13 @@ Install from anaconda via:
   conda install --channel https://conda.binstar.org/Clyde_Fare gausspy
   cc_notebook_init
 
+If you are using an old operating system (as many computational clusters do) then you may have an old version 
+of libc6 in this case you will want to use the install commands below that make use of a slightly older version of numpy (1.8):
+
+  conda install --channel https://conda.binstar.org/Clyde_Fare cc-notebook numpy=1.8
+  conda install --channel https://conda.binstar.org/Clyde_Fare gausspy numpy=1.8
+  cc_notebook_init
+
 a .cc_notebook.ini file is created by the cc_notebook_init command and placed in your home directory.
 
 Details particular to your setup need to be filled in.
