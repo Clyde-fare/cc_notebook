@@ -36,9 +36,9 @@ def cc_notebook_init(verbose=0):
                        "ase_scratch=local_scratchdirectory",
                        "[smart logs]",
                        "click=open -e",
-                       "shift_click=prog1",
-                       "cntrl_click=prog2",
-                       "cntrl_shift_click=prog3" )
+                       "shift_click=open -e",
+                       "cntrl_click=open -e",
+                       "cntrl_shift_click=open -e" )
 
     cc_ini_fl_pth = os.path.expanduser('~/.cc_notebook.ini')
 
@@ -58,15 +58,18 @@ def enable_notebook(verbose=0):
     """
     cc_ini_fl_pth = os.path.expanduser('~/.cc_notebook.ini')
     if not os.path.isfile(cc_ini_fl_pth):
-        raise(RuntimeError('cc_notebook not initialised please run cc_notebook_init from the terminal'))
+        raise(RuntimeError('cc_notebook not initialised please run "cc_notebook_init" from a terminal'))
 
     libs = ['cc_notebook.js',
             'jsmol']
     fns = [resource_filename('cc_notebook', os.path.join('static', f)) for f in libs]
-    install_nbextension([fns[0]], verbose=verbose, overwrite=True)
+
+    install_nbextension(fns[0], verbose=verbose, overwrite=True, user=True)
     
     # jsmol is large so we won't overwrite
-    install_nbextension(fns[1:], verbose=verbose, overwrite=False)
+    for fn in fns[1:]:
+        install_nbextension(fn, verbose=verbose, overwrite=False, user=True)
+
     display(activate_nb)
 
 if __name__ == '__main__':
