@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import ConfigParser
 from IPython.core import display
-import IPython.nbformat.current as nb_current
+from IPython import nbformat
 from IPython.core.getipython import get_ipython
 from .install import enable_notebook
 
@@ -17,6 +17,9 @@ enable_notebook()
 
 config = ConfigParser.RawConfigParser()
 config.read(os.path.expanduser('~/.cc_notebook.ini'))
+
+#version of IPython - controls notebook reading and writing functions
+ipy_ver=3
 
 #python functions to used by cc_notebook.js to enable a smart-log button, actual programs used set in ~/.cc_notebook.ini
 
@@ -281,6 +284,26 @@ def view_jmol(atoms, *args, **kwargs):
     atoms.write('temp_atoms.xyz')
     return view_ipython_jmol('temp_atoms.xyz', *args, **kwargs)
 
+
+def gen_good_movie(fname, atoms, frame_rate=1, bbox=None, pov=False):
+    """Generates movie from a list of atoms by generating a collection of pngs and then using ffmpeg to stitch the together
+
+    Requires ffmpeg to be installed on the system
+
+    Optionally uses pov ray for much higher quality (note this makes generating the movie much slower)"""
+
+    from ase.io import write
+
+    for i,mol in enumerate(atoms):
+        if pov:
+            write('temp_frame_{f:05d}.pov'.format(f=i),mol, bbox=bbox,run_povray=True,display=False)
+        else:
+            write('temp_frame_{f:05d}.png'.format(f=i),mol, bbox=bbox)
+
+    stitching_png = 'ffmpeg -y -framerate {fr} -i temp_frame_%05d.png -c:v libx264 -r 30 -pix_fmt yuv420p {fn}.mp4; rm temp_frame_*'.format(fn=fname,fr=frame_rate)
+    os.system(stitching_png)
+
+
 def gen_movie(title, list_atoms):
     from ase.io import xyz
 
@@ -386,8 +409,8 @@ def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
     with open(to_notebook) as nb2_f:
         nb2_raw = nb2_f.read()
 
-    nb1 = nb_current.reads_json(nb1_raw)
-    nb2 = nb_current.reads_json(nb2_raw)
+    nb1 = nbformat.reads(nb1_raw, as_version=ipy_ver)
+    nb2 = nbformat.reads(nb2_raw, as_version=ipy_ver)
 
     start_id, end_id = from_cells
     copied_cells = nb1['worksheets'][0]['cells'][start_id:end_id]
@@ -395,7 +418,7 @@ def copy_cells(from_notebook='', from_cells=(0, 0), to_notebook='', at_cell=0):
     active_cells = nb2['worksheets'][0]['cells']
     nb2['worksheets'][0]['cells'] = active_cells[:at_cell] + copied_cells + active_cells[at_cell:]
 
-    nb2_modified_raw = nb_current.writes_json(nb2)
+    nb2_modified_raw = nbformat.writes(nb2, as_version=ipy_ver)
 
     with open(to_notebook, 'w') as nb2_f:
         nb2_f.write(nb2_modified_raw)
@@ -417,7 +440,7 @@ def inherit_upto_cell(nb_name, cell_id=-1, silent=False):
         nb_name += '.ipynb'
 
     with io.open(nb_name) as f:
-        ancestor_nb = nb_current.read(f, 'json')
+        ancestor_nb = nbformat.read(f, as_version=ipy_ver)
 
     code_cells = [cell for cell in ancestor_nb.worksheets[0].cells if cell.cell_type == 'code']
 
@@ -443,9 +466,9 @@ def inherit_from(nb_name, uptolink='', silent=False):
         uptolink += '.ipynb'
 
     with io.open(nb_name) as f:
-        ancestor_nb = nb_current.read(f, 'json')
+        ancestor_nb = nbformat.read(f, as_version=ipy_ver)
 
-    cell_id=-1
+    cell_id = -1
 
     for cell in ancestor_nb.worksheets[0].cells:
         if cell.cell_type == 'code':
